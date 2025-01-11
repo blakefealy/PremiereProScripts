@@ -2,9 +2,7 @@
 * This script created by Blake Fealy finds all the clips that are at the playhead and removes them unless they are on locked tracks;
 */
 var project = app.project;
-var rootItem = project.rootItem;
 var sequence = project.activeSequence;
-var projectItems = rootItem.children;
 var sequenceID = sequence.projectItem.id;
 var activeSequence = null;
 
