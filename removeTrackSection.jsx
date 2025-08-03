@@ -1,6 +1,11 @@
-/*
-* This script created by Blake Fealy finds all the clips that are at the playhead and removes them unless they are on locked tracks;
-*/
+/**
+ * @name Remove Track Section
+ * @summary This script finds all the clips that are at the playhead and removes them unless they are on locked tracks.
+ * @author Blake Fealy <blakefealy.com>
+ * @version 1.0
+ * @dependencies The script requires the user to select clips/files in the project window and requires those files to have a source file in the file explorer.
+ * @updated 2025-08-02
+ */
 var project = app.project;
 var sequence = project.activeSequence;
 var sequenceID = sequence.projectItem.id;
@@ -96,4 +101,5 @@ function findSequenceIndex (sequence){
     }
     return returnSequence;
 }
+
 
