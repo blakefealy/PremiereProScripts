@@ -7,6 +7,7 @@
  * @updated 2025-05-01
  * @interface User is prompted to select the destination directory to copy the files to. User can browse for the folder or simply paste the folder path into the path field.
  * @userNotes A log file is created and/or updated at the destination location.
+ * @runningBool true
  */
 
 // IMPORTANT NOTE: For large files, Ditto can take a while to copy files. It is recommended to run this before taking a break or pause from your work, but if you want to keep an eye on it, go to the destination folder to view progress. 
