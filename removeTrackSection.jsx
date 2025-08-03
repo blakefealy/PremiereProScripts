@@ -7,7 +7,6 @@
  * @updated 2025-08-02
  */
 
-
 var project = app.project;
 var sequence = project.activeSequence;
 var sequenceID = sequence.projectItem.id;
@@ -103,6 +102,7 @@ function findSequenceIndex (sequence){
     }
     return returnSequence;
 }
+
 
 
 
