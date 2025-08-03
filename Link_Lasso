@@ -1,0 +1,169 @@
+/**
+ * @name Link Lasso
+ * @summary This script batch relinks selected files to a new parent directory, regardless of their depth or subfolder location within the directory structure.
+ * @author Blake Fealy <blakefealy.com>
+ * @version 1.2
+ * @compatiblePrgms premierepro, aftereffects
+ * @dependencies The script requires the user to select clips/files in the project window and does not distinguish between two files with the same name within the parent directory and will link to the first one it encounters.
+ * @updated 2025-04-30
+ * @interface User is prompted to select the parent directory to search for the files to link/relink. User can browse for the folder or simply paste the folder path into the path field.
+*/
+
+(function () {
+    var hostApp = BridgeTalk.appName;
+
+    if (hostApp === "premierepro") {
+        relinkInPremiere();
+    } else if (hostApp === "aftereffects") {
+        relinkInAfterEffects();
+    } else {
+        alert("This script only works in Adobe Premiere Pro or After Effects.");
+    }
+
+    // ---------- Premiere Pro Logic ----------
+    function relinkInPremiere() {
+        var project = app.project;
+        var sequence = project.activeSequence;
+        var selectedItems = app.getCurrentProjectViewSelection();
+        var projectFilePath = project.path;
+        var sdkPos = [];
+        var sdkNeg = [];
+
+        if (!projectFilePath || projectFilePath === "") {
+            alert("Please save your project before running this script.");
+            return;
+        }
+
+        var splitProjectPath = projectFilePath.split(/[\/\\]/);
+        var projectFolderPath = splitProjectPath.slice(0, -1).join('/');
+        var newFolder = new Folder(projectFolderPath);
+        var userInput = prompt(
+            'Enter the parent folder path for the batch relink,\nor leave blank to browse.',
+            String(projectFolderPath),
+            'Enter Parent Folder Location'
+        );
+        var searchParent = (!userInput) ? newFolder.selectDlg("Select the parent folder for the batch link") : new Folder(userInput);
+
+        if (!searchParent || selectedItems.length === 0) return;
+
+        for (var i = 0; i < selectedItems.length; i++) {
+            var item = selectedItems[i];
+            $.writeln(item.name + " [type]:  " + item.type);
+
+            if (item.type === 1) { // File (Footage)
+                var mediaPath = item.getMediaPath();
+                var itemFileName = mediaPath.split(/[\/\\]/).pop().replace(/ /g, "%20");
+
+                $.writeln("Looking for: " + itemFileName);
+
+                var matchedFile = searchDirectoryForFile(searchParent, itemFileName);
+
+                if (matchedFile) {
+                    item.changeMediaPath(matchedFile.fsName);
+                    sdkPos.push("✔️ " + itemFileName + " → " + matchedFile.fsName);
+                    $.writeln("Relinked: " + itemFileName + " -> " + matchedFile.fsName);
+                } else {
+                    sdkNeg.push("❌ " + itemFileName + " not found");
+                    $.writeln("File not found for: " + itemFileName);
+                }
+            }
+        }
+
+        // Show result
+        if (sdkPos.length > 0 || sdkNeg.length > 0) {
+            var finalMessage = '';
+            if (sdkPos.length > 0) {
+                finalMessage += "✅ Relinked " + sdkPos.length + " File(s)";
+            }
+            if (sdkPos.length > 0 && sdkNeg.length > 0) {
+                finalMessage += "\n-----------------------------\n";
+            }
+            if (sdkNeg.length > 0) {
+                finalMessage += "❌ Missing " + sdkNeg.length + " File(s):\n" + sdkNeg.join('\n');
+            }
+
+            var severity = (sdkPos.length === 0) ? 'error' : 'info';
+            app.setSDKEventMessage(finalMessage, severity);
+        }
+    }
+
+    // ---------- After Effects Logic ----------
+    function relinkInAfterEffects() {
+        var proj = app.project;
+        var sdkPos = [], sdkNeg = [];
+
+        if (!proj.file) {
+            alert("Please save your project before running this script.");
+            return;
+        }
+
+        var splitProjectPath = proj.file.fsName.split(/[\/\\]/);
+        var projectFolderPath = splitProjectPath.slice(0, -1).join('/');
+        var newFolder = new Folder(projectFolderPath);
+        var userInput = prompt(
+            'Enter the parent folder path for the batch relink,\nor leave blank to browse.',
+            String(projectFolderPath),
+            'Enter Parent Folder Location'
+        );
+        var searchParent = (!userInput) ? newFolder.selectDlg("Select the parent folder for the batch link") : new Folder(userInput);
+        if (!searchParent) return;
+
+        app.beginUndoGroup("Batch Relink Footage");
+
+        var selectedItems = proj.selection;
+        if (selectedItems.length === 0) {
+            alert("Please select footage items to relink in the Project panel.");
+            return;
+        }
+
+        for (var i = 0; i < selectedItems.length; i++) {
+            var item = selectedItems[i];
+            if (item instanceof FootageItem && item.mainSource instanceof FileSource) {
+                var mediaPath = item.file.fsName;
+                var itemFileName = mediaPath.split(/[\/\\]/).pop().replace(/ /g, "%20");
+
+                $.writeln("Looking for: " + itemFileName);
+                var matchedFile = searchDirectoryForFile(searchParent, itemFileName);
+
+                if (matchedFile) {
+                    item.replace(matchedFile);
+                    sdkPos.push("✔️ " + itemFileName + " → " + matchedFile.fsName);
+                    $.writeln("Relinked: " + itemFileName + " -> " + matchedFile.fsName);
+                } else {
+                    sdkNeg.push("❌ " + itemFileName + " not found");
+                    $.writeln("File not found for: " + itemFileName);
+                }
+            }
+        }
+
+        app.endUndoGroup();
+
+        var msg = "";
+        if (sdkPos.length > 0) msg += "✅ Relinked " + sdkPos.length + " File(s)";
+        if (sdkPos.length > 0 && sdkNeg.length > 0) msg += "\n-----------------------------\n";
+        if (sdkNeg.length > 0) msg += "❌ Missing " + sdkNeg.length + " File(s):\n" + sdkNeg.join('\n');
+
+        alert(msg);
+    }
+
+    // ---------- Shared Recursive Search ----------
+    function searchDirectoryForFile(folderObj, fileName) {
+        var fileArray = folderObj.getFiles();
+
+        for (var i = 0; i < fileArray.length; i++) {
+            var item = fileArray[i];
+
+            if (item instanceof Folder) {
+                var result = searchDirectoryForFile(item, fileName);
+                if (result) return result;
+            } else if (item instanceof File) {
+                $.writeln("Checking: " + item.name + " vs " + fileName);
+                if (item.name.toLowerCase() === fileName.toLowerCase()) {
+                    return item;
+                }
+            }
+        }
+
+        return null;
+    }
+})();
