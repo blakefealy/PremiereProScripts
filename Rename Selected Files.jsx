@@ -5,6 +5,7 @@
  * @version 1.5
  * @dependencies User must have project items selected that they want to push changes to.
  * @dateUpdated 2025-01-31
+ * @interface No interface is presented to the user.
  */
 
 var project = app.project;
