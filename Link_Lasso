@@ -7,6 +7,7 @@
  * @dependencies The script requires the user to select clips/files in the project window and does not distinguish between two files with the same name within the parent directory and will link to the first one it encounters.
  * @updated 2025-04-30
  * @interface User is prompted to select the parent directory to search for the files to link/relink. User can browse for the folder or simply paste the folder path into the path field.
+ * @runningBool true
 */
 
 (function () {
