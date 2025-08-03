@@ -6,6 +6,8 @@
  * @dependencies The script requires the user to select clips/files in the project window and requires those files to have a source file in the file explorer.
  * @updated 2025-08-02
  */
+
+
 var project = app.project;
 var sequence = project.activeSequence;
 var sequenceID = sequence.projectItem.id;
@@ -101,5 +103,6 @@ function findSequenceIndex (sequence){
     }
     return returnSequence;
 }
+
 
 
